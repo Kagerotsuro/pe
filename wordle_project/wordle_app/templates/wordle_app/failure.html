@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Guess The Word </title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #121212; 
+            color: #ffffff; 
+        }
+        .message {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Guess The Word </h1>
+    <div class="message">
+        <h2>Game Over</h2>
+        <p>You've used all attempts. The word was: {{ word }}</p>
+        <a href="{% url 'home' %}">Try Again</a>
+    </div>
+</body>
+</html>

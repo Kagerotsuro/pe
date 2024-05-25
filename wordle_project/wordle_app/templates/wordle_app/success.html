@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Guess The Word </title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #121212; 
+            color: #ffffff; 
+        }
+        .message {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Guess The Word </h1>
+    <div class="message">
+        <h2>Congratulations!</h2>
+        <p>You guessed the word correctly: {{ word }}</p>
+        <p>It took you {{ attempts }} attempts.</p>
+        <a href="{% url 'home' %}">Play Again</a>
+    </div>
+</body>
+</html>

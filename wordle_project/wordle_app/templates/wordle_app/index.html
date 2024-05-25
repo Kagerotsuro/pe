@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wordle Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: #ffffff;
+            position: relative;
+            height: 100vh;
+        }
+        .separator {
+            width: 80%;
+            margin: 0 auto;
+            border-bottom: 1px solid #ffffff;
+            margin-bottom: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 50px);
+            grid-gap: 5px;
+            justify-content: center;
+            margin: 20px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            background-color: transparent;
+        }
+        .gray { background-color: rgba(85, 85, 85, 0.5); }
+        .yellow { background-color: rgba(201, 180, 88, 0.5); }
+        .green { background-color: rgba(106, 170, 100, 0.5); }
+        form {
+            margin-top: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            text-transform: uppercase;
+            background-color: #333;
+            color: #fff;
+        }
+        button {
+            padding: 10px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background-color: #6aaa64;
+            color: #fff;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        .error-message {
+            color: red;
+            font-size: 1em;
+            margin-top: 10px;
+            visibility: hidden;
+        }
+        .show-error {
+            visibility: visible;
+        }
+        .help-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+        .help-content {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #333;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 300px;
+            text-align: left;
+            z-index: 1000;
+        }
+        .help-content .example-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 40px);
+            grid-gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .help-content .example-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wordle Game</h1>
+    <div class="separator"></div>
+    <div class="help-icon" onclick="toggleHelp()">❓</div>
+    <div class="overlay" id="overlay" onclick="toggleHelp()"></div>
+    <div class="help-content" id="help-content">
+        <h2>How To Play</h2>
+        <p>Guess the Wordle in 6 tries.</p>
+        <p>Each guess must be a valid 5-letter word.</p>
+        <p>The color of the tiles will change to show how close your guess was to the word.</p>
+        <p><strong>Examples</strong></p>
+        <div class="example-grid">
+            <div class="example-cell green">W</div>
+            <div class="example-cell">E</div>
+            <div class="example-cell">A</div>
+            <div class="example-cell">R</div>
+            <div class="example-cell">Y</div>
+        </div>
+        <p>W is in the word and in the correct spot.</p>
+        <div class="example-grid">
+            <div class="example-cell">P</div>
+            <div class="example-cell yellow">I</div>
+            <div class="example-cell">L</div>
+            <div class="example-cell">L</div>
+            <div class="example-cell">S</div>
+        </div>
+        <p>I is in the word but in the wrong spot.</p>
+        <div class="example-grid">
+            <div class="example-cell">V</div>
+            <div class="example-cell">A</div>
+            <div class="example-cell gray">U</div>
+            <div class="example-cell">G</div>
+            <div class="example-cell">E</div>
+        </div>
+        <p>U is not in the word in any spot.</p>
+    </div>
+    <div class="grid" id="grid">
+        {% for row in grid %}
+            {% for cell in row %}
+                <div class="cell {% if cell.color %}{{ cell.color }}{% endif %}">{{ cell.letter }}</div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    <form method="post" id="guess-form">
+        {% csrf_token %}
+        <input type="text" id="guess-input" name="guess" maxlength="5" required pattern="[A-Za-z]{5}" title="Please enter exactly 5 letters">
+        <button type="submit">Guess</button>
+    </form>
+    <div id="error-message" class="error-message">{{ error }}</div>
+    <script>
+        document.getElementById('guess-form').addEventListener('submit', function(event) {
+            const input = document.getElementById('guess-input');
+            if (input.value.length < 5) {
+                event.preventDefault();
+                shakeRow();
+            }
+        });
+
+        function shakeRow() {
+            const grid = document.getElementById('grid');
+            grid.classList.add('shake');
+            setTimeout(() => {
+                grid.classList.remove('shake');
+            }, 500);
+        }
+
+        function showError() {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.classList.add('show-error');
+            setTimeout(() => {
+                errorMessage.classList.remove('show-error');
+            }, 2000);
+        }
+
+        function toggleHelp() {
+            const helpContent = document.getElementById('help-content');
+            const overlay = document.getElementById('overlay');
+            if (helpContent.style.display === 'none' || helpContent.style.display === '') {
+                helpContent.style.display = 'block';
+                overlay.style.display = 'block';
+            } else {
+                helpContent.style.display = 'none';
+                overlay.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
